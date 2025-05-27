@@ -203,7 +203,7 @@
 </div>
 
 <script>
-// Inicialización de la vista de estadísticas
+// Inicialización SIMPLE de la vista de estadísticas
 document.addEventListener('DOMContentLoaded', initializeStatisticsView);
 document.addEventListener('statisticsViewLoaded', initializeStatisticsView);
 
@@ -215,448 +215,251 @@ function initializeStatisticsView() {
     
     console.log('Inicializando vista de estadísticas...');
     
-    // Variables para paginación
-    let currentPage = 1;
-    const rowsPerPage = 10;
-    let currentData = [];
-    let filteredData = [];
-    
-    // Inicializar eventos
-    initializeStatisticsEvents();
+    // Inicializar eventos básicos
+    initializeBasicEvents();
     
     // Cargar datos iniciales
     loadInitialData();
+}
+
+function initializeBasicEvents() {
+    // Selector de fuente de datos
+    const dataSource = document.getElementById('data-source');
+    if (dataSource) {
+        dataSource.addEventListener('change', handleDataSourceChange);
+    }
     
-    function initializeStatisticsEvents() {
-        // Selector de fuente de datos
-        const dataSource = document.getElementById('data-source');
-        if (dataSource) {
-            dataSource.addEventListener('change', handleDataSourceChange);
-        }
-        
-        // Botón de actualizar
-        const refreshBtn = document.getElementById('refresh-stats-btn');
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', refreshStatistics);
-        }
-        
-        // Botón de exportar
-        const exportBtn = document.getElementById('export-charts-btn');
-        if (exportBtn) {
-            exportBtn.addEventListener('click', exportAllCharts);
-        }
-        
-        // Tipo de gráfico adicional
-        const additionalChartType = document.getElementById('additional-chart-type');
-        if (additionalChartType) {
-            additionalChartType.addEventListener('change', updateAdditionalChart);
-        }
-        
-        // Búsqueda en datos
-        const dataSearch = document.getElementById('data-search');
-        if (dataSearch) {
-            dataSearch.addEventListener('input', handleDataSearch);
-        }
-        
-        // Filtro de datos
-        const dataFilter = document.getElementById('data-filter');
-        if (dataFilter) {
-            dataFilter.addEventListener('change', handleDataFilter);
-        }
-        
-        // Descarga de datos
-        const downloadBtn = document.getElementById('download-data');
-        if (downloadBtn) {
-            downloadBtn.addEventListener('click', downloadCurrentData);
-        }
-        
-        // Paginación
-        const prevBtn = document.getElementById('prev-page');
-        const nextBtn = document.getElementById('next-page');
-        if (prevBtn) prevBtn.addEventListener('click', () => changePage(-1));
-        if (nextBtn) nextBtn.addEventListener('click', () => changePage(1));
-        
-        // Controles de gráficos individuales
-        document.querySelectorAll('.chart-toggle').forEach(btn => {
-            btn.addEventListener('click', toggleChartType);
-        });
-        
-        document.querySelectorAll('.chart-export').forEach(btn => {
-            btn.addEventListener('click', exportIndividualChart);
+    // Botón de actualizar
+    const refreshBtn = document.getElementById('refresh-stats-btn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            console.log('Actualizando estadísticas...');
+            handleDataSourceChange();
         });
     }
     
-    function loadInitialData() {
-        // Intentar cargar datos del sistema
+    // Botón de descarga
+    const downloadBtn = document.getElementById('download-data');
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', downloadCurrentData);
+    }
+}
+
+function loadInitialData() {
+    // Intentar cargar datos del sistema
+    if (window.DataProcessor) {
+        const data = window.DataProcessor.getCurrentData();
+        const meta = window.DataProcessor.getCurrentMeta();
+        
+        if (data && data.length > 0) {
+            updateBasicStatistics(data, meta);
+        } else {
+            // Cargar datos de prueba si no hay datos
+            console.log('No hay datos en el sistema, cargando datos de prueba...');
+            handleDataSourceChange();
+        }
+    }
+}
+
+function handleDataSourceChange() {
+    const dataSource = document.getElementById('data-source');
+    if (!dataSource) return;
+    
+    const selectedValue = dataSource.value;
+    
+    if (selectedValue === 'current') {
+        // Cargar datos actuales
         if (window.DataProcessor) {
             const data = window.DataProcessor.getCurrentData();
             const meta = window.DataProcessor.getCurrentMeta();
-            
             if (data && data.length > 0) {
-                updateStatistics(data, meta);
+                updateBasicStatistics(data, meta);
             } else {
-                // Cargar datos de prueba si no hay datos
-                console.log('No hay datos en el sistema, cargando datos de prueba...');
-                handleDataSourceChange();
+                showNoDataMessage();
             }
+        }
+    } else if (selectedValue.startsWith('test-')) {
+        // Cargar datos de prueba
+        const testType = selectedValue.replace('test-', '');
+        if (window.TestData) {
+            const testData = window.TestData.loadTestData(testType);
+            updateBasicStatistics(testData.data, testData.meta);
         }
     }
-    
-    function handleDataSourceChange() {
-        const dataSource = document.getElementById('data-source');
-        if (!dataSource) return;
-        
-        const selectedValue = dataSource.value;
-        
-        if (selectedValue === 'current') {
-            // Cargar datos actuales
-            if (window.DataProcessor) {
-                const data = window.DataProcessor.getCurrentData();
-                const meta = window.DataProcessor.getCurrentMeta();
-                if (data) {
-                    updateStatistics(data, meta);
-                } else {
-                    showNoDataMessage();
-                }
-            }
-        } else if (selectedValue.startsWith('test-')) {
-            // Cargar datos de prueba
-            const testType = selectedValue.replace('test-', '');
-            if (window.TestData) {
-                const testData = window.TestData.loadTestData(testType);
-                updateStatistics(testData.data, testData.meta);
-            }
-        }
+}
+
+function updateBasicStatistics(data, meta = {}) {
+    if (!data || data.length === 0) {
+        showNoDataMessage();
+        return;
     }
     
-    function updateStatistics(data, meta = {}) {
-        if (!data || data.length === 0) {
-            showNoDataMessage();
-            return;
-        }
-        
-        currentData = data;
-        filteredData = [...data];
-        
-        // Actualizar resumen
-        updateSummaryCards(data, meta);
-        
-        // Actualizar gráficos
-        updateCharts(data);
-        
-        // Actualizar tabla
+    console.log('Actualizando estadísticas básicas con', data.length, 'registros');
+    
+    // Actualizar resumen
+    updateSummaryCards(data, meta);
+    
+    // Actualizar gráficos si están disponibles
+    if (window.AgeChart) {
+        window.AgeChart.updateChart(data);
+    }
+    
+    if (window.LocationChart) {
+        window.LocationChart.updateChart(data);
+    }
+    
+    // Actualizar tabla usando la función de navigation.js
+    console.log('Llamando a updateDataTable desde navigation.js...');
+    if (typeof updateDataTable === 'function') {
         updateDataTable(data);
-        
-        // Actualizar información detallada
-        updateDetailedStats(data, meta);
-        
-        console.log('Estadísticas actualizadas con', data.length, 'registros');
+        console.log('Tabla actualizada correctamente');
+    } else {
+        console.error('La función updateDataTable no está disponible');
     }
     
-    function updateSummaryCards(data, meta) {
-        // Total de registros
-        const totalRecords = document.getElementById('total-records');
-        if (totalRecords) {
-            totalRecords.textContent = data.length.toLocaleString();
-        }
-        
-        // Total de columnas
-        const totalColumns = document.getElementById('total-columns');
-        if (totalColumns && data.length > 0) {
-            totalColumns.textContent = Object.keys(data[0]).length;
-        }
-        
-        // Calidad de datos (porcentaje de filas completas)
-        const dataQuality = document.getElementById('data-quality');
-        if (dataQuality) {
-            const completeRows = data.filter(row => 
-                Object.values(row).every(val => val !== null && val !== undefined && val !== '')
-            ).length;
-            const quality = Math.round((completeRows / data.length) * 100);
-            dataQuality.textContent = quality + '%';
-        }
-        
-        // Última actualización
-        const lastUpdated = document.getElementById('last-updated');
-        if (lastUpdated) {
-            const date = meta.processedAt ? new Date(meta.processedAt) : new Date();
-            lastUpdated.textContent = date.toLocaleDateString();
-        }
+    // Actualizar información detallada
+    updateDetailedStats(data, meta);
+}
+
+function updateSummaryCards(data, meta) {
+    // Total de registros
+    const totalRecords = document.getElementById('total-records');
+    if (totalRecords) {
+        totalRecords.textContent = data.length.toLocaleString();
     }
     
-    function updateCharts(data) {
-        if (!data || data.length === 0) return;
-        
-        // Actualizar gráfico de edades
-        if (window.AgeChart) {
-            window.AgeChart.updateChart(data);
-        }
-        
-        // Actualizar gráfico de ubicaciones
-        if (window.LocationChart) {
-            window.LocationChart.updateChart(data);
-        }
-        
-        // Actualizar gráfico adicional
-        updateAdditionalChart();
+    // Total de columnas
+    const totalColumns = document.getElementById('total-columns');
+    if (totalColumns && data.length > 0) {
+        totalColumns.textContent = Object.keys(data[0]).length;
     }
     
-    function updateAdditionalChart() {
-        const chartType = document.getElementById('additional-chart-type')?.value;
-        if (!chartType || !currentData.length) return;
-        
-        // Lógica para diferentes tipos de gráficos adicionales
-        // Esta función se implementará en los scripts específicos
-        if (window.AdditionalCharts) {
-            window.AdditionalCharts.updateChart(chartType, currentData);
-        }
-    }
-    
-    function updateDataTable(data) {
-        if (!data || data.length === 0) return;
-        
-        const tableHead = document.getElementById('data-table-head');
-        const tableBody = document.getElementById('data-table-body');
-        
-        if (!tableHead || !tableBody) return;
-        
-        // Crear encabezados
-        const headers = Object.keys(data[0]);
-        tableHead.innerHTML = `
-            <tr>
-                ${headers.map(header => `<th>${header}</th>`).join('')}
-            </tr>
-        `;
-        
-        // Actualizar tabla con datos paginados
-        updateTablePage();
-    }
-    
-    function updateTablePage() {
-        const tableBody = document.getElementById('data-table-body');
-        if (!tableBody) return;
-        
-        const startIndex = (currentPage - 1) * rowsPerPage;
-        const endIndex = startIndex + rowsPerPage;
-        const pageData = filteredData.slice(startIndex, endIndex);
-        
-        // Generar filas
-        tableBody.innerHTML = pageData.map(row => {
-            const cells = Object.values(row).map(value => {
-                let displayValue = value;
-                if (typeof value === 'number') {
-                    displayValue = value.toLocaleString();
-                } else if (value instanceof Date) {
-                    displayValue = value.toLocaleDateString();
-                }
-                return `<td>${displayValue}</td>`;
-            }).join('');
-            return `<tr>${cells}</tr>`;
-        }).join('');
-        
-        // Actualizar controles de paginación
-        updatePaginationControls();
-    }
-    
-    function updatePaginationControls() {
-        const totalPages = Math.ceil(filteredData.length / rowsPerPage);
-        
-        // Información de paginación
-        const paginationInfo = document.getElementById('pagination-info');
-        if (paginationInfo) {
-            const startIndex = (currentPage - 1) * rowsPerPage + 1;
-            const endIndex = Math.min(currentPage * rowsPerPage, filteredData.length);
-            paginationInfo.textContent = `Mostrando ${startIndex}-${endIndex} de ${filteredData.length} registros`;
-        }
-        
-        // Página actual
-        const currentPageSpan = document.getElementById('current-page');
-        if (currentPageSpan) {
-            currentPageSpan.textContent = `${currentPage} de ${totalPages}`;
-        }
-        
-        // Botones de navegación
-        const prevBtn = document.getElementById('prev-page');
-        const nextBtn = document.getElementById('next-page');
-        
-        if (prevBtn) {
-            prevBtn.disabled = currentPage <= 1;
-        }
-        
-        if (nextBtn) {
-            nextBtn.disabled = currentPage >= totalPages;
-        }
-    }
-    
-    function changePage(direction) {
-        const totalPages = Math.ceil(filteredData.length / rowsPerPage);
-        const newPage = currentPage + direction;
-        
-        if (newPage >= 1 && newPage <= totalPages) {
-            currentPage = newPage;
-            updateTablePage();
-        }
-    }
-    
-    function handleDataSearch() {
-        const searchTerm = document.getElementById('data-search')?.value.toLowerCase() || '';
-        
-        if (searchTerm === '') {
-            filteredData = [...currentData];
-        } else {
-            filteredData = currentData.filter(row => {
-                return Object.values(row).some(value => 
-                    String(value).toLowerCase().includes(searchTerm)
-                );
-            });
-        }
-        
-        currentPage = 1;
-        updateTablePage();
-    }
-    
-    function handleDataFilter() {
-        const filterType = document.getElementById('data-filter')?.value;
-        
-        switch (filterType) {
-            case 'all':
-                filteredData = [...currentData];
-                break;
-            case 'recent':
-                // Filtrar por fecha si hay una columna de fecha
-                filteredData = [...currentData].slice(-Math.min(50, currentData.length));
-                break;
-            case 'top':
-                // Ordenar por primer campo numérico encontrado
-                const numericField = Object.keys(currentData[0] || {}).find(key => 
-                    typeof currentData[0][key] === 'number'
-                );
-                if (numericField) {
-                    filteredData = [...currentData].sort((a, b) => b[numericField] - a[numericField]);
-                } else {
-                    filteredData = [...currentData];
-                }
-                break;
-            default:
-                filteredData = [...currentData];
-        }
-        
-        currentPage = 1;
-        updateTablePage();
-    }
-    
-    function updateDetailedStats(data, meta) {
-        // Nombre del dataset
-        const datasetName = document.getElementById('dataset-name');
-        if (datasetName) {
-            datasetName.textContent = meta.datasetName || 'Sin nombre';
-        }
-        
-        // Fuente
-        const datasetSource = document.getElementById('dataset-source');
-        if (datasetSource) {
-            datasetSource.textContent = meta.source || 'No especificada';
-        }
-        
-        // Filas completas e incompletas
+    // Calidad de datos
+    const dataQuality = document.getElementById('data-quality');
+    if (dataQuality) {
         const completeRows = data.filter(row => 
             Object.values(row).every(val => val !== null && val !== undefined && val !== '')
         ).length;
-        
-        const completeRowsEl = document.getElementById('complete-rows');
-        const incompleteRowsEl = document.getElementById('incomplete-rows');
-        
-        if (completeRowsEl) completeRowsEl.textContent = completeRows.toLocaleString();
-        if (incompleteRowsEl) incompleteRowsEl.textContent = (data.length - completeRows).toLocaleString();
-        
-        // Tipos de datos
-        const dataTypesEl = document.getElementById('data-types');
-        if (dataTypesEl && data.length > 0) {
-            const types = Object.values(data[0]).map(val => typeof val);
-            const uniqueTypes = [...new Set(types)];
-            dataTypesEl.textContent = uniqueTypes.join(', ');
-        }
-        
-        // Memoria estimada
-        const memoryUsageEl = document.getElementById('memory-usage');
-        if (memoryUsageEl) {
-            const estimatedSize = JSON.stringify(data).length;
-            const sizeInKB = Math.round(estimatedSize / 1024);
-            memoryUsageEl.textContent = sizeInKB < 1024 ? `${sizeInKB} KB` : `${Math.round(sizeInKB/1024)} MB`;
-        }
+        const quality = Math.round((completeRows / data.length) * 100);
+        dataQuality.textContent = quality + '%';
     }
     
-    function refreshStatistics() {
-        console.log('Actualizando estadísticas...');
-        handleDataSourceChange();
+    // Última actualización
+    const lastUpdated = document.getElementById('last-updated');
+    if (lastUpdated) {
+        const date = meta.processedAt ? new Date(meta.processedAt) : new Date();
+        lastUpdated.textContent = date.toLocaleDateString();
+    }
+}
+
+function updateDetailedStats(data, meta) {
+    // Nombre del dataset
+    const datasetName = document.getElementById('dataset-name');
+    if (datasetName) {
+        datasetName.textContent = meta.datasetName || 'Sin nombre';
     }
     
-    function downloadCurrentData() {
-        if (!filteredData.length) {
-            alert('No hay datos para descargar');
-            return;
-        }
-        
-        // Generar CSV
-        const headers = Object.keys(filteredData[0]);
-        const csvContent = [
-            headers.join(','),
-            ...filteredData.map(row => 
-                headers.map(header => {
-                    const value = row[header];
-                    if (typeof value === 'string' && value.includes(',')) {
-                        return `"${value}"`;
-                    }
-                    return value;
-                }).join(',')
-            )
-        ].join('\n');
-        
-        // Descargar archivo
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'datos_estadisticas.csv';
-        a.click();
-        window.URL.revokeObjectURL(url);
+    // Fuente
+    const datasetSource = document.getElementById('dataset-source');
+    if (datasetSource) {
+        datasetSource.textContent = meta.source || 'No especificada';
     }
     
-    function exportAllCharts() {
-        if (window.DataExport) {
-            window.DataExport.exportAllCharts();
+    // Filas completas e incompletas
+    const completeRows = data.filter(row => 
+        Object.values(row).every(val => val !== null && val !== undefined && val !== '')
+    ).length;
+    
+    const completeRowsEl = document.getElementById('complete-rows');
+    const incompleteRowsEl = document.getElementById('incomplete-rows');
+    
+    if (completeRowsEl) completeRowsEl.textContent = completeRows.toLocaleString();
+    if (incompleteRowsEl) incompleteRowsEl.textContent = (data.length - completeRows).toLocaleString();
+    
+    // Tipos de datos
+    const dataTypesEl = document.getElementById('data-types');
+    if (dataTypesEl && data.length > 0) {
+        const types = Object.values(data[0]).map(val => typeof val);
+        const uniqueTypes = [...new Set(types)];
+        dataTypesEl.textContent = uniqueTypes.join(', ');
+    }
+    
+    // Memoria estimada
+    const memoryUsageEl = document.getElementById('memory-usage');
+    if (memoryUsageEl) {
+        const estimatedSize = JSON.stringify(data).length;
+        const sizeInKB = Math.round(estimatedSize / 1024);
+        memoryUsageEl.textContent = sizeInKB < 1024 ? `${sizeInKB} KB` : `${Math.round(sizeInKB/1024)} MB`;
+    }
+}
+
+function downloadCurrentData() {
+    // Obtener datos actuales
+    let data = null;
+    
+    if (window.DataProcessor) {
+        data = window.DataProcessor.getCurrentData();
+    }
+    
+    if (!data || data.length === 0) {
+        alert('No hay datos para descargar');
+        return;
+    }
+    
+    // Generar CSV
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+        headers.join(','),
+        ...data.map(row => 
+            headers.map(header => {
+                const value = row[header];
+                if (typeof value === 'string' && value.includes(',')) {
+                    return `"${value}"`;
+                }
+                return value;
+            }).join(',')
+        )
+    ].join('\n');
+    
+    // Descargar archivo
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'datos_estadisticas.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+function showNoDataMessage() {
+    // Limpiar resumen
+    document.getElementById('total-records').textContent = '0';
+    document.getElementById('total-columns').textContent = '0';
+    document.getElementById('data-quality').textContent = '0%';
+    document.getElementById('last-updated').textContent = '-';
+    
+    // Mensaje en tabla
+    const tableBody = document.getElementById('data-table-body');
+    if (tableBody) {
+        tableBody.innerHTML = '<tr><td colspan="100%">No hay datos disponibles. Carga un conjunto de datos o selecciona datos de prueba.</td></tr>';
+    }
+}
+
+// Función de debugging global
+window.debugStatistics = {
+    updateTable: () => {
+        const data = window.DataProcessor ? window.DataProcessor.getCurrentData() : null;
+        if (data && data.length > 0) {
+            console.log('Ejecutando updateDataTable con', data.length, 'registros');
+            updateDataTable(data);
         } else {
-            alert('Función de exportación no disponible');
+            console.log('No hay datos disponibles');
         }
-    }
-    
-    function exportIndividualChart(event) {
-        const chartName = event.target.getAttribute('data-chart');
-        if (window.DataExport) {
-            window.DataExport.exportChart(chartName);
-        } else {
-            alert('Función de exportación no disponible');
-        }
-    }
-    
-    function toggleChartType(event) {
-        const chartName = event.target.getAttribute('data-chart');
-        // Esta función se implementará en los scripts específicos de gráficos
-        console.log('Cambiar tipo de gráfico:', chartName);
-    }
-    
-    function showNoDataMessage() {
-        // Limpiar resumen
-        document.getElementById('total-records').textContent = '0';
-        document.getElementById('total-columns').textContent = '0';
-        document.getElementById('data-quality').textContent = '0%';
-        document.getElementById('last-updated').textContent = '-';
-        
-        // Mostrar mensaje en tabla
-        const tableBody = document.getElementById('data-table-body');
-        if (tableBody) {
-            tableBody.innerHTML = '<tr><td colspan="100%">No hay datos disponibles. Carga un conjunto de datos o selecciona datos de prueba.</td></tr>';
-        }
+    },
+    getCurrentData: () => {
+        return window.DataProcessor ? window.DataProcessor.getCurrentData() : null;
     }
 };
+
+console.log('Vista de estadísticas cargada. Usa window.debugStatistics.updateTable() para debugging');
 </script>

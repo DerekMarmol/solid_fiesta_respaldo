@@ -318,6 +318,17 @@ function initializeView(viewName) {
                         }
                     }
                     
+                    // Inicializar gráfico adicional
+                    if (window.AdditionalChart) {
+                        window.AdditionalChart.init();
+                        if (currentData && currentData.length > 0) {
+                            console.log('Actualizando gráfico adicional automáticamente...');
+                            // Usar el valor por defecto del selector
+                            const defaultType = document.getElementById('additional-chart-type')?.value || 'department';
+                            window.AdditionalChart.updateChart(defaultType, currentData);
+                        }
+                    }
+                    
                     console.log('Disparando evento statisticsViewLoaded...');
                     const event = new CustomEvent('statisticsViewLoaded');
                     document.dispatchEvent(event);
@@ -398,8 +409,12 @@ function initializeView(viewName) {
                             memoryUsageEl.textContent = sizeInKB < 1024 ? `${sizeInKB} KB` : `${Math.round(sizeInKB/1024)} MB`;
                         }
                         
-                        // Actualizar tabla de datos (primeras 10 filas)
-                        updateDataTable(currentData);
+                        // 🔥 AQUÍ ESTÁ LA PARTE CLAVE: Actualizar la tabla
+                        console.log('Actualizando tabla de datos...');
+                        setTimeout(() => {
+                            updateDataTable(currentData);
+                            console.log('Tabla de datos actualizada automáticamente');
+                        }, 200);
                         
                         console.log('Estadísticas numéricas actualizadas');
                         console.log('Información detallada actualizada');
@@ -407,6 +422,10 @@ function initializeView(viewName) {
                 } else {
                     console.log('Vista básica detectada, no hay gráficos para inicializar');
                 }
+                
+                // Configurar eventos del selector de datos
+                setupStatisticsEvents();
+                
             }, 300);
             break;
         case 'settings':
@@ -882,3 +901,340 @@ function updateDataTable(data) {
         paginationInfo.textContent = `Mostrando 1-${Math.min(10, data.length)} de ${data.length} registros`;
     }
 }
+
+function setupStatisticsEvents() {
+    console.log('Configurando eventos de estadísticas...');
+    
+    // Selector de fuente de datos
+    const dataSource = document.getElementById('data-source');
+    if (dataSource && !dataSource.hasAttribute('data-events-setup')) {
+        dataSource.setAttribute('data-events-setup', 'true');
+        dataSource.addEventListener('change', handleStatisticsDataSourceChange);
+        console.log('Evento del selector de datos configurado');
+    }
+    
+    // Botón de actualizar
+    const refreshBtn = document.getElementById('refresh-stats-btn');
+    if (refreshBtn && !refreshBtn.hasAttribute('data-events-setup')) {
+        refreshBtn.setAttribute('data-events-setup', 'true');
+        refreshBtn.addEventListener('click', () => {
+            console.log('Actualizando estadísticas manualmente...');
+            handleStatisticsDataSourceChange();
+        });
+        console.log('Evento del botón actualizar configurado');
+    }
+
+    const additionalChartType = document.getElementById('additional-chart-type');
+    if (additionalChartType && !additionalChartType.hasAttribute('data-events-setup')) {
+        additionalChartType.setAttribute('data-events-setup', 'true');
+        
+        // Eliminar eventos anteriores para evitar duplicados
+        additionalChartType.removeEventListener('change', updateAdditionalChart);
+        
+        // Agregar evento con más logging
+        additionalChartType.addEventListener('change', function(event) {
+            console.log('Evento change del selector disparado');
+            console.log('Valor seleccionado:', event.target.value);
+            console.log('Elemento que disparó:', event.target);
+            
+            // Pequeño delay para asegurar que el DOM esté actualizado
+            setTimeout(() => {
+                console.log('Cambiando tipo de gráfico adicional a:', event.target.value);
+                updateAdditionalChart();
+            }, 50);
+        });
+        
+        console.log('Evento del selector de gráfico adicional configurado');
+    }
+    
+    // Botón de descarga
+    const downloadBtn = document.getElementById('download-data');
+    if (downloadBtn && !downloadBtn.hasAttribute('data-events-setup')) {
+        downloadBtn.setAttribute('data-events-setup', 'true');
+        downloadBtn.addEventListener('click', downloadStatisticsData);
+        console.log('Evento del botón descargar configurado');
+    }
+}
+
+// REEMPLAZAR la función updateAdditionalChart() en navigation.js con esta versión corregida:
+
+// REEMPLAZAR la función updateAdditionalChart() en navigation.js con esta versión corregida:
+
+function updateAdditionalChart() {
+    const chartTypeElement = document.getElementById('additional-chart-type');
+    if (!chartTypeElement) {
+        console.log('Selector de tipo de gráfico adicional no encontrado');
+        return;
+    }
+    
+    const chartType = chartTypeElement.value;
+    console.log('updateAdditionalChart: Actualizando gráfico adicional con tipo:', chartType);
+    
+    // Obtener datos actuales
+    let currentData = null;
+    
+    // Intentar obtener datos del DataProcessor
+    if (window.DataProcessor) {
+        currentData = window.DataProcessor.getCurrentData();
+        console.log('updateAdditionalChart: Datos de DataProcessor:', currentData?.length || 0);
+    }
+    
+    // Si no hay datos actuales, intentar obtener de la fuente seleccionada
+    if (!currentData || currentData.length === 0) {
+        const dataSource = document.getElementById('data-source');
+        if (dataSource) {
+            const selectedValue = dataSource.value;
+            console.log('updateAdditionalChart: Fuente seleccionada:', selectedValue);
+            
+            if (selectedValue === 'current' && window.DataProcessor) {
+                currentData = window.DataProcessor.getCurrentData();
+            } else if (selectedValue.startsWith('test-') && window.TestData) {
+                const testType = selectedValue.replace('test-', '');
+                const testData = window.TestData.loadTestData(testType);
+                currentData = testData.data;
+                console.log('updateAdditionalChart: Datos de prueba cargados:', currentData?.length || 0);
+            }
+        }
+    }
+    
+    console.log('updateAdditionalChart: Datos finales disponibles:', currentData?.length || 0, 'registros');
+    
+    if (!currentData || currentData.length === 0) {
+        console.warn('updateAdditionalChart: No hay datos disponibles para el gráfico adicional');
+        
+        // Mostrar mensaje en el gráfico
+        const statsElement = document.getElementById('additional-stats');
+        if (statsElement) {
+            statsElement.textContent = 'No hay datos disponibles para este análisis';
+        }
+        return;
+    }
+    
+    // Usar el nuevo sistema de gráficos adicionales
+    if (window.AdditionalChart && window.AdditionalChart.updateChart) {
+        console.log('updateAdditionalChart: Llamando a AdditionalChart.updateChart con:', chartType, currentData.length, 'registros');
+        // ✅ AQUÍ ESTÁ EL FIX PRINCIPAL: pasar los parámetros correctamente
+        window.AdditionalChart.updateChart(chartType, currentData);
+    } else {
+        console.error('updateAdditionalChart: AdditionalChart no está disponible o no tiene updateChart');
+        console.log('updateAdditionalChart: window.AdditionalChart =', window.AdditionalChart);
+    }
+}
+
+function handleStatisticsDataSourceChange() {
+    const dataSource = document.getElementById('data-source');
+    if (!dataSource) {
+        console.log('Selector de datos no encontrado');
+        return;
+    }
+    
+    const selectedValue = dataSource.value;
+    console.log('Cambiando fuente de datos a:', selectedValue);
+    
+    let data = null;
+    let meta = {};
+    
+    if (selectedValue === 'current') {
+        // Cargar datos actuales
+        if (window.DataProcessor) {
+            data = window.DataProcessor.getCurrentData();
+            meta = window.DataProcessor.getCurrentMeta() || {};
+            console.log('Cargando datos actuales:', data?.length || 0, 'registros');
+        }
+    } else if (selectedValue.startsWith('test-')) {
+        // Cargar datos de prueba
+        const testType = selectedValue.replace('test-', '');
+        if (window.TestData) {
+            const testData = window.TestData.loadTestData(testType);
+            data = testData.data;
+            meta = testData.meta;
+            console.log('Cargando datos de prueba:', testType, '-', data?.length || 0, 'registros');
+        }
+    }
+    
+    if (data && data.length > 0) {
+        // Actualizar gráficos
+        if (window.AgeChart) {
+            window.AgeChart.updateChart(data);
+        }
+        if (window.LocationChart) {
+            window.LocationChart.updateChart(data);
+        }
+        
+        // Actualizar estadísticas
+        updateStatisticsDisplay(data, meta);
+        
+        // Actualizar tabla
+        setTimeout(() => {
+            updateDataTable(data);
+            
+            console.log('Tabla actualizada por cambio de fuente de datos');
+        }, 100);
+        
+        // Actualizar gráfico adicional
+        setTimeout(() => {
+            updateAdditionalChart();
+            console.log('Gráfico adicional actualizado por cambio de fuente de datos');
+        }, 150);
+    } else {
+        console.log('No hay datos disponibles para la fuente seleccionada');
+        showNoStatisticsData();
+    }
+}
+
+function updateStatisticsDisplay(data, meta) {
+    // Esta función actualiza las tarjetas de resumen y detalles
+    // (código similar al que ya tienes arriba)
+    console.log('Actualizando display de estadísticas...');
+    
+    // Total de registros
+    const totalRecords = document.getElementById('total-records');
+    if (totalRecords) {
+        totalRecords.textContent = data.length.toLocaleString();
+    }
+    
+    // Total de columnas
+    const totalColumns = document.getElementById('total-columns');
+    if (totalColumns) {
+        totalColumns.textContent = Object.keys(data[0]).length;
+    }
+    
+    // Calidad de datos
+    const dataQuality = document.getElementById('data-quality');
+    if (dataQuality) {
+        const completeRows = data.filter(row => 
+            Object.values(row).every(val => val !== null && val !== undefined && val !== '')
+        ).length;
+        const quality = Math.round((completeRows / data.length) * 100);
+        dataQuality.textContent = quality + '%';
+    }
+    
+    // Última actualización
+    const lastUpdated = document.getElementById('last-updated');
+    if (lastUpdated) {
+        const date = meta.processedAt ? new Date(meta.processedAt) : new Date();
+        lastUpdated.textContent = date.toLocaleDateString();
+    }
+    
+    // Información detallada
+    const datasetNameEl = document.getElementById('dataset-name');
+    if (datasetNameEl) {
+        datasetNameEl.textContent = meta.datasetName || 'Sin nombre';
+    }
+    
+    const datasetSourceEl = document.getElementById('dataset-source');
+    if (datasetSourceEl) {
+        datasetSourceEl.textContent = meta.source || 'No especificada';
+    }
+}
+
+function downloadStatisticsData() {
+    // Obtener datos actuales del selector
+    const dataSource = document.getElementById('data-source');
+    let data = null;
+    
+    if (dataSource) {
+        const selectedValue = dataSource.value;
+        
+        if (selectedValue === 'current' && window.DataProcessor) {
+            data = window.DataProcessor.getCurrentData();
+        } else if (selectedValue.startsWith('test-') && window.TestData) {
+            const testType = selectedValue.replace('test-', '');
+            const testData = window.TestData.loadTestData(testType);
+            data = testData.data;
+        }
+    }
+    
+    if (!data || data.length === 0) {
+        alert('No hay datos para descargar');
+        return;
+    }
+    
+    // Generar CSV
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+        headers.join(','),
+        ...data.map(row => 
+            headers.map(header => {
+                const value = row[header];
+                if (typeof value === 'string' && value.includes(',')) {
+                    return `"${value}"`;
+                }
+                return value;
+            }).join(',')
+        )
+    ].join('\n');
+    
+    // Descargar archivo
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'estadisticas_datos.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+    
+    console.log('Descarga de datos iniciada');
+}
+
+function showNoStatisticsData() {
+    // Limpiar resumen
+    const elements = [
+        'total-records', 'total-columns', 'data-quality', 'last-updated',
+        'dataset-name', 'dataset-source', 'complete-rows', 'incomplete-rows',
+        'data-types', 'memory-usage'
+    ];
+    
+    elements.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = id.includes('quality') ? '0%' : (id.includes('records') || id.includes('columns') ? '0' : '-');
+        }
+    });
+    
+    // Mensaje en tabla
+    const tableBody = document.getElementById('data-table-body');
+    if (tableBody) {
+        tableBody.innerHTML = '<tr><td colspan="100%">No hay datos disponibles. Selecciona una fuente de datos.</td></tr>';
+    }
+}
+
+window.debugAdditionalChart = function(type) {
+    console.log('=== DEBUG ADDITIONAL CHART ===');
+    console.log('Tipo solicitado:', type);
+    
+    // Verificar elementos
+    const selector = document.getElementById('additional-chart-type');
+    const canvas = document.getElementById('additional-chart');
+    const statsElement = document.getElementById('additional-stats');
+    
+    console.log('Elementos encontrados:', {
+        selector: !!selector,
+        canvas: !!canvas,
+        statsElement: !!statsElement,
+        selectorValue: selector?.value
+    });
+    
+    // Verificar datos
+    const data = window.DataProcessor?.getCurrentData();
+    console.log('Datos disponibles:', data?.length || 0);
+    console.log('Primer registro:', data?.[0]);
+    
+    // Verificar funciones
+    console.log('Funciones disponibles:', {
+        AdditionalChart: !!window.AdditionalChart,
+        updateChart: !!window.AdditionalChart?.updateChart,
+        DataProcessor: !!window.DataProcessor,
+        getCurrentData: !!window.DataProcessor?.getCurrentData
+    });
+    
+    // Intentar actualizar
+    if (type && data && window.AdditionalChart) {
+        console.log('Intentando actualizar con:', type);
+        window.AdditionalChart.updateChart(type, data);
+    }
+    
+    console.log('=== FIN DEBUG ===');
+};
+
+console.log('Función de debug disponible: window.debugAdditionalChart("salary")');
