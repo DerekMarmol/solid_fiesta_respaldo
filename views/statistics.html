@@ -1,0 +1,662 @@
+<div class="statistics-container">
+    <h2 class="section-title">Estadísticas Generales</h2>
+    
+    <!-- Controles superiores -->
+    <div class="statistics-controls">
+        <div class="data-selector">
+            <label for="data-source">Fuente de datos:</label>
+            <select id="data-source" class="select-input">
+                <option value="current">Datos actuales</option>
+                <option value="test-employees">Datos de prueba - Empleados</option>
+                <option value="test-sales">Datos de prueba - Ventas</option>
+                <option value="test-satisfaction">Datos de prueba - Satisfacción</option>
+                <option value="test-products">Datos de prueba - Productos</option>
+            </select>
+        </div>
+        
+        <div class="export-controls">
+            <button id="export-charts-btn" class="btn btn-secondary">
+                📊 Exportar Gráficos
+            </button>
+            <button id="refresh-stats-btn" class="btn">
+                🔄 Actualizar
+            </button>
+        </div>
+    </div>
+    
+    <!-- Resumen estadístico -->
+    <div class="stats-summary">
+        <div class="summary-card">
+            <div class="summary-icon">📊</div>
+            <div class="summary-content">
+                <h3 id="total-records">0</h3>
+                <p>Total de registros</p>
+            </div>
+        </div>
+        
+        <div class="summary-card">
+            <div class="summary-icon">📈</div>
+            <div class="summary-content">
+                <h3 id="total-columns">0</h3>
+                <p>Columnas de datos</p>
+            </div>
+        </div>
+        
+        <div class="summary-card">
+            <div class="summary-icon">🎯</div>
+            <div class="summary-content">
+                <h3 id="data-quality">0%</h3>
+                <p>Calidad de datos</p>
+            </div>
+        </div>
+        
+        <div class="summary-card">
+            <div class="summary-icon">📅</div>
+            <div class="summary-content">
+                <h3 id="last-updated">-</h3>
+                <p>Última actualización</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Gráficos principales -->
+    <div class="charts-grid">
+        <!-- Gráfico de distribución de edades -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3>Distribución de Edades</h3>
+                <div class="chart-controls">
+                    <button class="chart-toggle" data-chart="age" title="Cambiar tipo de gráfico">
+                        📊
+                    </button>
+                    <button class="chart-export" data-chart="age" title="Exportar gráfico">
+                        💾
+                    </button>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="age-chart"></canvas>
+            </div>
+            <div class="chart-info">
+                <p id="age-stats">Cargando estadísticas...</p>
+            </div>
+        </div>
+        
+        <!-- Gráfico de lugares de origen -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3>Distribución por Ubicación</h3>
+                <div class="chart-controls">
+                    <button class="chart-toggle" data-chart="location" title="Cambiar tipo de gráfico">
+                        📊
+                    </button>
+                    <button class="chart-export" data-chart="location" title="Exportar gráfico">
+                        💾
+                    </button>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="location-chart"></canvas>
+            </div>
+            <div class="chart-info">
+                <p id="location-stats">Cargando estadísticas...</p>
+            </div>
+        </div>
+        
+        <!-- Gráfico adicional dinámico -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3>Análisis Adicional</h3>
+                <div class="chart-controls">
+                    <select id="additional-chart-type" class="select-input">
+                        <option value="department">Por Departamento</option>
+                        <option value="salary">Distribución Salarial</option>
+                        <option value="gender">Por Género</option>
+                        <option value="custom">Personalizado</option>
+                    </select>
+                    <button class="chart-export" data-chart="additional" title="Exportar gráfico">
+                        💾
+                    </button>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="additional-chart"></canvas>
+            </div>
+            <div class="chart-info">
+                <p id="additional-stats">Selecciona un tipo de análisis</p>
+            </div>
+        </div>
+        
+        <!-- Tabla de datos -->
+        <div class="chart-container full-width">
+            <div class="chart-header">
+                <h3>Vista de Datos</h3>
+                <div class="chart-controls">
+                    <input type="text" id="data-search" class="text-input" placeholder="Buscar en datos...">
+                    <select id="data-filter" class="select-input">
+                        <option value="all">Todos los registros</option>
+                        <option value="recent">Más recientes</option>
+                        <option value="top">Valores más altos</option>
+                    </select>
+                    <button id="download-data" class="btn btn-secondary" title="Descargar datos">
+                        📥 Descargar CSV
+                    </button>
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <table id="data-table">
+                    <thead id="data-table-head">
+                        <tr>
+                            <th>No hay datos disponibles</th>
+                        </tr>
+                    </thead>
+                    <tbody id="data-table-body">
+                        <tr>
+                            <td>Carga un conjunto de datos para ver la información aquí</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-pagination">
+                <div class="pagination-info">
+                    <span id="pagination-info">Mostrando 0 de 0 registros</span>
+                </div>
+                <div class="pagination-controls">
+                    <button id="prev-page" class="btn btn-secondary" disabled>← Anterior</button>
+                    <span id="current-page">1</span>
+                    <button id="next-page" class="btn btn-secondary" disabled>Siguiente →</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Panel de información detallada -->
+    <div class="detailed-stats">
+        <h3>Información Detallada del Dataset</h3>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <label>Nombre del dataset:</label>
+                <span id="dataset-name">-</span>
+            </div>
+            <div class="stat-item">
+                <label>Fuente:</label>
+                <span id="dataset-source">-</span>
+            </div>
+            <div class="stat-item">
+                <label>Filas con datos completos:</label>
+                <span id="complete-rows">-</span>
+            </div>
+            <div class="stat-item">
+                <label>Filas con datos faltantes:</label>
+                <span id="incomplete-rows">-</span>
+            </div>
+            <div class="stat-item">
+                <label>Tipos de datos:</label>
+                <span id="data-types">-</span>
+            </div>
+            <div class="stat-item">
+                <label>Memoria utilizada:</label>
+                <span id="memory-usage">-</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Inicialización de la vista de estadísticas
+document.addEventListener('DOMContentLoaded', initializeStatisticsView);
+document.addEventListener('statisticsViewLoaded', initializeStatisticsView);
+
+function initializeStatisticsView() {
+    // Verificar si estamos en la vista correcta
+    if (!document.querySelector('.statistics-container')) {
+        return;
+    }
+    
+    console.log('Inicializando vista de estadísticas...');
+    
+    // Variables para paginación
+    let currentPage = 1;
+    const rowsPerPage = 10;
+    let currentData = [];
+    let filteredData = [];
+    
+    // Inicializar eventos
+    initializeStatisticsEvents();
+    
+    // Cargar datos iniciales
+    loadInitialData();
+    
+    function initializeStatisticsEvents() {
+        // Selector de fuente de datos
+        const dataSource = document.getElementById('data-source');
+        if (dataSource) {
+            dataSource.addEventListener('change', handleDataSourceChange);
+        }
+        
+        // Botón de actualizar
+        const refreshBtn = document.getElementById('refresh-stats-btn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', refreshStatistics);
+        }
+        
+        // Botón de exportar
+        const exportBtn = document.getElementById('export-charts-btn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', exportAllCharts);
+        }
+        
+        // Tipo de gráfico adicional
+        const additionalChartType = document.getElementById('additional-chart-type');
+        if (additionalChartType) {
+            additionalChartType.addEventListener('change', updateAdditionalChart);
+        }
+        
+        // Búsqueda en datos
+        const dataSearch = document.getElementById('data-search');
+        if (dataSearch) {
+            dataSearch.addEventListener('input', handleDataSearch);
+        }
+        
+        // Filtro de datos
+        const dataFilter = document.getElementById('data-filter');
+        if (dataFilter) {
+            dataFilter.addEventListener('change', handleDataFilter);
+        }
+        
+        // Descarga de datos
+        const downloadBtn = document.getElementById('download-data');
+        if (downloadBtn) {
+            downloadBtn.addEventListener('click', downloadCurrentData);
+        }
+        
+        // Paginación
+        const prevBtn = document.getElementById('prev-page');
+        const nextBtn = document.getElementById('next-page');
+        if (prevBtn) prevBtn.addEventListener('click', () => changePage(-1));
+        if (nextBtn) nextBtn.addEventListener('click', () => changePage(1));
+        
+        // Controles de gráficos individuales
+        document.querySelectorAll('.chart-toggle').forEach(btn => {
+            btn.addEventListener('click', toggleChartType);
+        });
+        
+        document.querySelectorAll('.chart-export').forEach(btn => {
+            btn.addEventListener('click', exportIndividualChart);
+        });
+    }
+    
+    function loadInitialData() {
+        // Intentar cargar datos del sistema
+        if (window.DataProcessor) {
+            const data = window.DataProcessor.getCurrentData();
+            const meta = window.DataProcessor.getCurrentMeta();
+            
+            if (data && data.length > 0) {
+                updateStatistics(data, meta);
+            } else {
+                // Cargar datos de prueba si no hay datos
+                console.log('No hay datos en el sistema, cargando datos de prueba...');
+                handleDataSourceChange();
+            }
+        }
+    }
+    
+    function handleDataSourceChange() {
+        const dataSource = document.getElementById('data-source');
+        if (!dataSource) return;
+        
+        const selectedValue = dataSource.value;
+        
+        if (selectedValue === 'current') {
+            // Cargar datos actuales
+            if (window.DataProcessor) {
+                const data = window.DataProcessor.getCurrentData();
+                const meta = window.DataProcessor.getCurrentMeta();
+                if (data) {
+                    updateStatistics(data, meta);
+                } else {
+                    showNoDataMessage();
+                }
+            }
+        } else if (selectedValue.startsWith('test-')) {
+            // Cargar datos de prueba
+            const testType = selectedValue.replace('test-', '');
+            if (window.TestData) {
+                const testData = window.TestData.loadTestData(testType);
+                updateStatistics(testData.data, testData.meta);
+            }
+        }
+    }
+    
+    function updateStatistics(data, meta = {}) {
+        if (!data || data.length === 0) {
+            showNoDataMessage();
+            return;
+        }
+        
+        currentData = data;
+        filteredData = [...data];
+        
+        // Actualizar resumen
+        updateSummaryCards(data, meta);
+        
+        // Actualizar gráficos
+        updateCharts(data);
+        
+        // Actualizar tabla
+        updateDataTable(data);
+        
+        // Actualizar información detallada
+        updateDetailedStats(data, meta);
+        
+        console.log('Estadísticas actualizadas con', data.length, 'registros');
+    }
+    
+    function updateSummaryCards(data, meta) {
+        // Total de registros
+        const totalRecords = document.getElementById('total-records');
+        if (totalRecords) {
+            totalRecords.textContent = data.length.toLocaleString();
+        }
+        
+        // Total de columnas
+        const totalColumns = document.getElementById('total-columns');
+        if (totalColumns && data.length > 0) {
+            totalColumns.textContent = Object.keys(data[0]).length;
+        }
+        
+        // Calidad de datos (porcentaje de filas completas)
+        const dataQuality = document.getElementById('data-quality');
+        if (dataQuality) {
+            const completeRows = data.filter(row => 
+                Object.values(row).every(val => val !== null && val !== undefined && val !== '')
+            ).length;
+            const quality = Math.round((completeRows / data.length) * 100);
+            dataQuality.textContent = quality + '%';
+        }
+        
+        // Última actualización
+        const lastUpdated = document.getElementById('last-updated');
+        if (lastUpdated) {
+            const date = meta.processedAt ? new Date(meta.processedAt) : new Date();
+            lastUpdated.textContent = date.toLocaleDateString();
+        }
+    }
+    
+    function updateCharts(data) {
+        if (!data || data.length === 0) return;
+        
+        // Actualizar gráfico de edades
+        if (window.AgeChart) {
+            window.AgeChart.updateChart(data);
+        }
+        
+        // Actualizar gráfico de ubicaciones
+        if (window.LocationChart) {
+            window.LocationChart.updateChart(data);
+        }
+        
+        // Actualizar gráfico adicional
+        updateAdditionalChart();
+    }
+    
+    function updateAdditionalChart() {
+        const chartType = document.getElementById('additional-chart-type')?.value;
+        if (!chartType || !currentData.length) return;
+        
+        // Lógica para diferentes tipos de gráficos adicionales
+        // Esta función se implementará en los scripts específicos
+        if (window.AdditionalCharts) {
+            window.AdditionalCharts.updateChart(chartType, currentData);
+        }
+    }
+    
+    function updateDataTable(data) {
+        if (!data || data.length === 0) return;
+        
+        const tableHead = document.getElementById('data-table-head');
+        const tableBody = document.getElementById('data-table-body');
+        
+        if (!tableHead || !tableBody) return;
+        
+        // Crear encabezados
+        const headers = Object.keys(data[0]);
+        tableHead.innerHTML = `
+            <tr>
+                ${headers.map(header => `<th>${header}</th>`).join('')}
+            </tr>
+        `;
+        
+        // Actualizar tabla con datos paginados
+        updateTablePage();
+    }
+    
+    function updateTablePage() {
+        const tableBody = document.getElementById('data-table-body');
+        if (!tableBody) return;
+        
+        const startIndex = (currentPage - 1) * rowsPerPage;
+        const endIndex = startIndex + rowsPerPage;
+        const pageData = filteredData.slice(startIndex, endIndex);
+        
+        // Generar filas
+        tableBody.innerHTML = pageData.map(row => {
+            const cells = Object.values(row).map(value => {
+                let displayValue = value;
+                if (typeof value === 'number') {
+                    displayValue = value.toLocaleString();
+                } else if (value instanceof Date) {
+                    displayValue = value.toLocaleDateString();
+                }
+                return `<td>${displayValue}</td>`;
+            }).join('');
+            return `<tr>${cells}</tr>`;
+        }).join('');
+        
+        // Actualizar controles de paginación
+        updatePaginationControls();
+    }
+    
+    function updatePaginationControls() {
+        const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+        
+        // Información de paginación
+        const paginationInfo = document.getElementById('pagination-info');
+        if (paginationInfo) {
+            const startIndex = (currentPage - 1) * rowsPerPage + 1;
+            const endIndex = Math.min(currentPage * rowsPerPage, filteredData.length);
+            paginationInfo.textContent = `Mostrando ${startIndex}-${endIndex} de ${filteredData.length} registros`;
+        }
+        
+        // Página actual
+        const currentPageSpan = document.getElementById('current-page');
+        if (currentPageSpan) {
+            currentPageSpan.textContent = `${currentPage} de ${totalPages}`;
+        }
+        
+        // Botones de navegación
+        const prevBtn = document.getElementById('prev-page');
+        const nextBtn = document.getElementById('next-page');
+        
+        if (prevBtn) {
+            prevBtn.disabled = currentPage <= 1;
+        }
+        
+        if (nextBtn) {
+            nextBtn.disabled = currentPage >= totalPages;
+        }
+    }
+    
+    function changePage(direction) {
+        const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+        const newPage = currentPage + direction;
+        
+        if (newPage >= 1 && newPage <= totalPages) {
+            currentPage = newPage;
+            updateTablePage();
+        }
+    }
+    
+    function handleDataSearch() {
+        const searchTerm = document.getElementById('data-search')?.value.toLowerCase() || '';
+        
+        if (searchTerm === '') {
+            filteredData = [...currentData];
+        } else {
+            filteredData = currentData.filter(row => {
+                return Object.values(row).some(value => 
+                    String(value).toLowerCase().includes(searchTerm)
+                );
+            });
+        }
+        
+        currentPage = 1;
+        updateTablePage();
+    }
+    
+    function handleDataFilter() {
+        const filterType = document.getElementById('data-filter')?.value;
+        
+        switch (filterType) {
+            case 'all':
+                filteredData = [...currentData];
+                break;
+            case 'recent':
+                // Filtrar por fecha si hay una columna de fecha
+                filteredData = [...currentData].slice(-Math.min(50, currentData.length));
+                break;
+            case 'top':
+                // Ordenar por primer campo numérico encontrado
+                const numericField = Object.keys(currentData[0] || {}).find(key => 
+                    typeof currentData[0][key] === 'number'
+                );
+                if (numericField) {
+                    filteredData = [...currentData].sort((a, b) => b[numericField] - a[numericField]);
+                } else {
+                    filteredData = [...currentData];
+                }
+                break;
+            default:
+                filteredData = [...currentData];
+        }
+        
+        currentPage = 1;
+        updateTablePage();
+    }
+    
+    function updateDetailedStats(data, meta) {
+        // Nombre del dataset
+        const datasetName = document.getElementById('dataset-name');
+        if (datasetName) {
+            datasetName.textContent = meta.datasetName || 'Sin nombre';
+        }
+        
+        // Fuente
+        const datasetSource = document.getElementById('dataset-source');
+        if (datasetSource) {
+            datasetSource.textContent = meta.source || 'No especificada';
+        }
+        
+        // Filas completas e incompletas
+        const completeRows = data.filter(row => 
+            Object.values(row).every(val => val !== null && val !== undefined && val !== '')
+        ).length;
+        
+        const completeRowsEl = document.getElementById('complete-rows');
+        const incompleteRowsEl = document.getElementById('incomplete-rows');
+        
+        if (completeRowsEl) completeRowsEl.textContent = completeRows.toLocaleString();
+        if (incompleteRowsEl) incompleteRowsEl.textContent = (data.length - completeRows).toLocaleString();
+        
+        // Tipos de datos
+        const dataTypesEl = document.getElementById('data-types');
+        if (dataTypesEl && data.length > 0) {
+            const types = Object.values(data[0]).map(val => typeof val);
+            const uniqueTypes = [...new Set(types)];
+            dataTypesEl.textContent = uniqueTypes.join(', ');
+        }
+        
+        // Memoria estimada
+        const memoryUsageEl = document.getElementById('memory-usage');
+        if (memoryUsageEl) {
+            const estimatedSize = JSON.stringify(data).length;
+            const sizeInKB = Math.round(estimatedSize / 1024);
+            memoryUsageEl.textContent = sizeInKB < 1024 ? `${sizeInKB} KB` : `${Math.round(sizeInKB/1024)} MB`;
+        }
+    }
+    
+    function refreshStatistics() {
+        console.log('Actualizando estadísticas...');
+        handleDataSourceChange();
+    }
+    
+    function downloadCurrentData() {
+        if (!filteredData.length) {
+            alert('No hay datos para descargar');
+            return;
+        }
+        
+        // Generar CSV
+        const headers = Object.keys(filteredData[0]);
+        const csvContent = [
+            headers.join(','),
+            ...filteredData.map(row => 
+                headers.map(header => {
+                    const value = row[header];
+                    if (typeof value === 'string' && value.includes(',')) {
+                        return `"${value}"`;
+                    }
+                    return value;
+                }).join(',')
+            )
+        ].join('\n');
+        
+        // Descargar archivo
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'datos_estadisticas.csv';
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
+    
+    function exportAllCharts() {
+        if (window.DataExport) {
+            window.DataExport.exportAllCharts();
+        } else {
+            alert('Función de exportación no disponible');
+        }
+    }
+    
+    function exportIndividualChart(event) {
+        const chartName = event.target.getAttribute('data-chart');
+        if (window.DataExport) {
+            window.DataExport.exportChart(chartName);
+        } else {
+            alert('Función de exportación no disponible');
+        }
+    }
+    
+    function toggleChartType(event) {
+        const chartName = event.target.getAttribute('data-chart');
+        // Esta función se implementará en los scripts específicos de gráficos
+        console.log('Cambiar tipo de gráfico:', chartName);
+    }
+    
+    function showNoDataMessage() {
+        // Limpiar resumen
+        document.getElementById('total-records').textContent = '0';
+        document.getElementById('total-columns').textContent = '0';
+        document.getElementById('data-quality').textContent = '0%';
+        document.getElementById('last-updated').textContent = '-';
+        
+        // Mostrar mensaje en tabla
+        const tableBody = document.getElementById('data-table-body');
+        if (tableBody) {
+            tableBody.innerHTML = '<tr><td colspan="100%">No hay datos disponibles. Carga un conjunto de datos o selecciona datos de prueba.</td></tr>';
+        }
+    }
+};
+</script>
