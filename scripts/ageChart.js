@@ -159,36 +159,63 @@ function findAgeField(data) {
     if (!data || data.length === 0) return null;
     
     const firstRow = data[0];
-    const possibleFields = ['edad', 'age', 'años', 'years', 'edades'];
+    const possibleFields = [
+        'edad', 'age', 'años', 'years', 'edades', 'tienes', 'año', 'year'
+    ];
+    
+    console.log('Buscando campo de edad en:', Object.keys(firstRow));
     
     // Buscar por nombre exacto
     for (const field of possibleFields) {
         if (firstRow.hasOwnProperty(field)) {
+            console.log('Campo de edad encontrado (exacto):', field);
             return field;
         }
     }
     
-    // Buscar por nombre parcial (case insensitive)
+    // Buscar por nombre parcial (case insensitive) - más agresivo
     for (const key of Object.keys(firstRow)) {
         const lowerKey = key.toLowerCase();
         for (const field of possibleFields) {
             if (lowerKey.includes(field)) {
+                console.log('Campo de edad encontrado (parcial):', key);
                 return key;
             }
         }
     }
     
-    // Buscar campo numérico que podría ser edad (valores entre 1 y 120)
+    // Buscar patrones específicos como "¿qué edad tienes?"
     for (const key of Object.keys(firstRow)) {
-        const values = data.slice(0, 10).map(row => row[key]).filter(val => typeof val === 'number');
-        if (values.length > 0) {
-            const avgValue = values.reduce((sum, val) => sum + val, 0) / values.length;
-            if (avgValue >= 1 && avgValue <= 120) {
-                return key;
-            }
+        const lowerKey = key.toLowerCase();
+        if (lowerKey.includes('edad') || lowerKey.includes('age') || 
+            lowerKey.includes('años') || lowerKey.includes('tienes')) {
+            console.log('Campo de edad encontrado (patrón):', key);
+            return key;
         }
     }
     
+    // Buscar campo numérico que podría ser edad (valores entre 5 y 120)
+    for (const key of Object.keys(firstRow)) {
+        // Tomar una muestra más grande
+        const values = data.slice(0, Math.min(20, data.length))
+            .map(row => {
+                const val = row[key];
+                if (typeof val === 'number') return val;
+                if (typeof val === 'string') {
+                    const parsed = parseInt(val.trim());
+                    return isNaN(parsed) ? null : parsed;
+                }
+                return null;
+            })
+            .filter(val => val !== null && val >= 5 && val <= 120);
+        
+        if (values.length > data.length * 0.3) { // Al menos 30% de valores válidos como edad
+            console.log('Campo de edad encontrado (numérico):', key, 'valores:', values.slice(0, 5));
+            return key;
+        }
+    }
+    
+    console.log('No se encontró campo de edad');
     return null;
 }
 

@@ -3,7 +3,7 @@
  * Sistema para cargar datos desde URLs externas (APIs, archivos remotos, etc.)
  */
 
-// Cache para evitar solicitudes repetidas
+
 const requestCache = new Map();
 
 // Tiempo de expiración del caché en milisegundos (10 minutos por defecto)
@@ -12,7 +12,7 @@ const CACHE_EXPIRATION = 10 * 60 * 1000;
 // Tipos de datos soportados
 const DATA_TYPES = {
     JSON: 'json',
-    CSV: 'csv', 
+    CSV: 'csv',
     TEXT: 'text'
 };
 

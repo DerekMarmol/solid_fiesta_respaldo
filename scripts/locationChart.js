@@ -190,8 +190,11 @@ function findLocationField(data) {
     const possibleFields = [
         'ubicacion', 'location', 'ciudad', 'city', 'lugar', 'place',
         'origen', 'origin', 'residencia', 'residence', 'direccion', 'address',
-        'provincia', 'province', 'estado', 'state', 'region', 'pais', 'country'
+        'provincia', 'province', 'estado', 'state', 'region', 'pais', 'country',
+        'donde', 'dónde', 'de_donde', 'de_dónde', 'procedencia', 'localidad'
     ];
+    
+    console.log('Buscando campo de ubicación en:', Object.keys(firstRow));
     
     // Buscar por nombre exacto (case insensitive)
     for (const field of possibleFields) {
@@ -199,22 +202,38 @@ function findLocationField(data) {
             key.toLowerCase() === field.toLowerCase()
         );
         if (exactMatch) {
+            console.log('Campo de ubicación encontrado (exacto):', exactMatch);
             return exactMatch;
         }
     }
     
-    // Buscar por nombre parcial (case insensitive)
+    // Buscar por nombre parcial (case insensitive) - más flexible
     for (const key of Object.keys(firstRow)) {
         const lowerKey = key.toLowerCase();
         for (const field of possibleFields) {
             if (lowerKey.includes(field)) {
+                console.log('Campo de ubicación encontrado (parcial):', key);
                 return key;
             }
         }
     }
     
+    // Buscar patrones específicos en los nombres de columnas
+    for (const key of Object.keys(firstRow)) {
+        const lowerKey = key.toLowerCase();
+        // Buscar patrones como "¿de dónde eres?" o similar
+        if (lowerKey.includes('dónde') || lowerKey.includes('donde') || 
+            lowerKey.includes('eres') || lowerKey.includes('vives') ||
+            lowerKey.includes('ciudad') || lowerKey.includes('lugar')) {
+            console.log('Campo de ubicación encontrado (patrón):', key);
+            return key;
+        }
+    }
+    
+    console.log('No se encontró campo de ubicación');
     return null;
 }
+
 
 /**
  * Procesar datos de ubicación

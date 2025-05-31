@@ -9,6 +9,7 @@ const views = {
     analysis: 'views/analysis.html',
     statistics: 'views/statistics.html',
     interactive: 'views/interactive.html',
+    probabilistic: 'views/probabilistic.html',  // ✅ AGREGAR ESTA LÍNEA
     report: 'views/report.html',
     settings: 'views/settings.html'
 };
@@ -200,6 +201,24 @@ function getDefaultViewContent(viewName) {
                     <p>Los gráficos interactivos estarán disponibles después de cargar datos.</p>
                 </div>
             `;
+         case 'probabilistic':
+            return `
+                <div class="probabilistic-container">
+                    <h2 class="section-title">Análisis Probabilístico - Distribución Normal</h2>
+                    <div class="card">
+                        <h3>🎯 Módulo de Análisis Probabilístico</h3>
+                        <p>Esta vista permite realizar cálculos de probabilidad usando distribución normal.</p>
+                        <p><strong>Características:</strong></p>
+                        <ul>
+                            <li>Cálculo de probabilidades exactas, mayores, menores y entre rangos</li>
+                            <li>Gráficos de curva normal con regiones sombreadas</li>
+                            <li>Ejemplos prácticos basados en tus datos</li>
+                            <li>Historial de cálculos</li>
+                        </ul>
+                        <p><em>Carga datos desde la vista de "Cargar datos" para comenzar el análisis.</em></p>
+                    </div>
+                </div>
+            `;
         case 'settings':
             return `
                 <div class="settings-container">
@@ -288,6 +307,19 @@ function initializeView(viewName) {
         case 'report':
             // Inicializar la vista de reportes cuando esté implementada
             console.log('Vista de reportes cargada');
+            break;
+        case 'probabilistic':
+            console.log('Vista de análisis probabilístico cargada');
+            
+            // Inicializar el módulo de análisis probabilístico después de un pequeño delay
+            setTimeout(() => {
+                if (window.ProbabilisticAnalysis) {
+                    window.ProbabilisticAnalysis.init();
+                    console.log('Módulo de análisis probabilístico inicializado');
+                } else {
+                    console.warn('ProbabilisticAnalysis no está disponible');
+                }
+            }, 300);
             break;
         case 'statistics':
             console.log('Vista de estadísticas cargada');
@@ -863,42 +895,174 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Función para actualizar la tabla de datos
 function updateDataTable(data) {
-    if (!data || data.length === 0) return;
+    if (!data || data.length === 0) {
+        console.log('updateDataTable: No hay datos para mostrar');
+        return;
+    }
+    
+    console.log('updateDataTable: Actualizando tabla con', data.length, 'registros');
     
     const tableHead = document.getElementById('data-table-head');
     const tableBody = document.getElementById('data-table-body');
     
-    if (!tableHead || !tableBody) return;
+    if (!tableHead || !tableBody) {
+        console.error('updateDataTable: No se encontraron elementos de la tabla');
+        return;
+    }
+    
+    // ✅ AQUÍ ESTÁ EL FIX: Establecer las variables globales de paginación
+    window.currentTableData = data;
+    window.filteredTableData = [...data];
+    window.currentTablePage = 1;
+    window.rowsPerTablePage = 10;
+    
+    console.log('updateDataTable: Variables globales establecidas');
+    console.log('currentTableData:', window.currentTableData.length);
+    console.log('filteredTableData:', window.filteredTableData.length);
     
     // Crear encabezados
     const headers = Object.keys(data[0]);
+    console.log('updateDataTable: Headers:', headers);
+    
     tableHead.innerHTML = `
         <tr>
             ${headers.map(header => `<th>${header}</th>`).join('')}
         </tr>
     `;
     
-    // Mostrar primeras 10 filas
-    const displayData = data.slice(0, 10);
+    console.log('updateDataTable: Headers actualizados');
+    
+    // Actualizar tabla con datos paginados
+    updateTablePage();
+    
+    console.log('updateDataTable: Tabla actualizada completamente');
+}
+
+function updateTablePage() {
+    const tableBody = document.getElementById('data-table-body');
+    if (!tableBody) {
+        console.error('updateTablePage: No se encontró table-body');
+        return;
+    }
+    
+    // Usar variables globales si existen, sino valores por defecto
+    const currentData = window.filteredTableData || [];
+    const currentPage = window.currentTablePage || 1;
+    const rowsPerPage = window.rowsPerTablePage || 10;
+    
+    console.log('updateTablePage: Actualizando página', currentPage);
+    console.log('updateTablePage: Datos filtrados:', currentData.length);
+    console.log('updateTablePage: Filas por página:', rowsPerPage);
+    
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    const pageData = currentData.slice(startIndex, endIndex);
+    
+    console.log('updateTablePage: Mostrando registros', startIndex + 1, 'a', Math.min(endIndex, currentData.length));
+    console.log('updateTablePage: Datos de la página:', pageData.length, 'registros');
+    
+    if (pageData.length === 0 && currentData.length > 0) {
+        console.warn('updateTablePage: No hay datos para la página actual, regresando a página 1');
+        window.currentTablePage = 1;
+        updateTablePage();
+        return;
+    }
+    
+    if (pageData.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="100%">No hay datos para mostrar</td></tr>';
+        updatePaginationControls();
+        return;
+    }
     
     // Generar filas
-    tableBody.innerHTML = displayData.map(row => {
+    const rowsHtml = pageData.map(row => {
         const cells = Object.values(row).map(value => {
             let displayValue = value;
             if (typeof value === 'number') {
                 displayValue = value.toLocaleString();
             } else if (value instanceof Date) {
                 displayValue = value.toLocaleDateString();
+            } else if (value === null || value === undefined) {
+                displayValue = '-';
             }
             return `<td>${displayValue}</td>`;
         }).join('');
         return `<tr>${cells}</tr>`;
     }).join('');
     
-    // Actualizar información de paginación
+    console.log('updateTablePage: HTML generado para', pageData.length, 'filas');
+    tableBody.innerHTML = rowsHtml;
+    
+    // Actualizar controles de paginación
+    updatePaginationControls();
+    
+    console.log('updateTablePage: Página actualizada correctamente');
+}
+
+function updatePaginationControls() {
+    const currentData = window.filteredTableData || [];
+    const currentPage = window.currentTablePage || 1;
+    const rowsPerPage = window.rowsPerTablePage || 10;
+    
+    const totalPages = Math.ceil(currentData.length / rowsPerPage);
+    
+    console.log('updatePaginationControls:', {
+        totalRecords: currentData.length,
+        currentPage: currentPage,
+        totalPages: totalPages,
+        rowsPerPage: rowsPerPage
+    });
+    
+    // Información de paginación
     const paginationInfo = document.getElementById('pagination-info');
     if (paginationInfo) {
-        paginationInfo.textContent = `Mostrando 1-${Math.min(10, data.length)} de ${data.length} registros`;
+        const startIndex = (currentPage - 1) * rowsPerPage + 1;
+        const endIndex = Math.min(currentPage * rowsPerPage, currentData.length);
+        paginationInfo.textContent = `Mostrando ${startIndex}-${endIndex} de ${currentData.length} registros`;
+    }
+    
+    // Página actual
+    const currentPageSpan = document.getElementById('current-page');
+    if (currentPageSpan) {
+        currentPageSpan.textContent = `${currentPage} de ${totalPages}`;
+    }
+    
+    // Botones de navegación
+    const prevBtn = document.getElementById('prev-page');
+    const nextBtn = document.getElementById('next-page');
+    
+    if (prevBtn) {
+        prevBtn.disabled = currentPage <= 1;
+        console.log('Botón anterior:', currentPage <= 1 ? 'deshabilitado' : 'habilitado');
+    }
+    
+    if (nextBtn) {
+        nextBtn.disabled = currentPage >= totalPages;
+        console.log('Botón siguiente:', currentPage >= totalPages ? 'deshabilitado' : 'habilitado');
+    }
+}
+
+function changePage(direction) {
+    const currentData = window.filteredTableData || [];
+    const currentPage = window.currentTablePage || 1;
+    const rowsPerPage = window.rowsPerTablePage || 10;
+    
+    const totalPages = Math.ceil(currentData.length / rowsPerPage);
+    const newPage = currentPage + direction;
+    
+    console.log('changePage:', {
+        direction: direction,
+        currentPage: currentPage,
+        newPage: newPage,
+        totalPages: totalPages
+    });
+    
+    if (newPage >= 1 && newPage <= totalPages) {
+        window.currentTablePage = newPage;
+        updateTablePage();
+        console.log('Página cambiada a:', newPage);
+    } else {
+        console.log('Página fuera de rango:', newPage);
     }
 }
 
@@ -911,6 +1075,27 @@ function setupStatisticsEvents() {
         dataSource.setAttribute('data-events-setup', 'true');
         dataSource.addEventListener('change', handleStatisticsDataSourceChange);
         console.log('Evento del selector de datos configurado');
+    }
+
+    const prevBtn = document.getElementById('prev-page');
+    const nextBtn = document.getElementById('next-page');
+    
+    if (prevBtn && !prevBtn.hasAttribute('data-events-setup')) {
+        prevBtn.setAttribute('data-events-setup', 'true');
+        prevBtn.addEventListener('click', () => {
+            console.log('Botón anterior clickeado');
+            changePage(-1);
+        });
+        console.log('Evento del botón anterior configurado');
+    }
+    
+    if (nextBtn && !nextBtn.hasAttribute('data-events-setup')) {
+        nextBtn.setAttribute('data-events-setup', 'true');
+        nextBtn.addEventListener('click', () => {
+            console.log('Botón siguiente clickeado');
+            changePage(1);
+        });
+        console.log('Evento del botón siguiente configurado');
     }
     
     // Botón de actualizar
@@ -931,17 +1116,16 @@ function setupStatisticsEvents() {
         // Eliminar eventos anteriores para evitar duplicados
         additionalChartType.removeEventListener('change', updateAdditionalChart);
         
-        // Agregar evento con más logging
+        // Agregar evento con más logging y tiempo
         additionalChartType.addEventListener('change', function(event) {
             console.log('Evento change del selector disparado');
             console.log('Valor seleccionado:', event.target.value);
-            console.log('Elemento que disparó:', event.target);
             
-            // Pequeño delay para asegurar que el DOM esté actualizado
+            // Tiempo más largo para asegurar que los datos estén disponibles
             setTimeout(() => {
-                console.log('Cambiando tipo de gráfico adicional a:', event.target.value);
+                console.log('Ejecutando updateAdditionalChart después de timeout...');
                 updateAdditionalChart();
-            }, 50);
+            }, 100); // Aumentado de 50ms a 100ms
         });
         
         console.log('Evento del selector de gráfico adicional configurado');
@@ -956,68 +1140,82 @@ function setupStatisticsEvents() {
     }
 }
 
-// REEMPLAZAR la función updateAdditionalChart() en navigation.js con esta versión corregida:
-
-// REEMPLAZAR la función updateAdditionalChart() en navigation.js con esta versión corregida:
-
 function updateAdditionalChart() {
+    console.log('updateAdditionalChart: Iniciando función...');
+    
     const chartTypeElement = document.getElementById('additional-chart-type');
     if (!chartTypeElement) {
-        console.log('Selector de tipo de gráfico adicional no encontrado');
+        console.error('updateAdditionalChart: Selector de tipo de gráfico adicional no encontrado');
         return;
     }
     
     const chartType = chartTypeElement.value;
-    console.log('updateAdditionalChart: Actualizando gráfico adicional con tipo:', chartType);
+    console.log('updateAdditionalChart: Tipo seleccionado:', chartType);
     
-    // Obtener datos actuales
     let currentData = null;
     
-    // Intentar obtener datos del DataProcessor
-    if (window.DataProcessor) {
+    if (window.DataProcessor && typeof window.DataProcessor.getCurrentData === 'function') {
         currentData = window.DataProcessor.getCurrentData();
-        console.log('updateAdditionalChart: Datos de DataProcessor:', currentData?.length || 0);
+        console.log('updateAdditionalChart: Datos obtenidos de DataProcessor:', currentData?.length || 0);
     }
     
-    // Si no hay datos actuales, intentar obtener de la fuente seleccionada
     if (!currentData || currentData.length === 0) {
+        console.log('updateAdditionalChart: No hay datos en DataProcessor, intentando desde selector...');
+        
         const dataSource = document.getElementById('data-source');
         if (dataSource) {
             const selectedValue = dataSource.value;
             console.log('updateAdditionalChart: Fuente seleccionada:', selectedValue);
             
-            if (selectedValue === 'current' && window.DataProcessor) {
-                currentData = window.DataProcessor.getCurrentData();
-            } else if (selectedValue.startsWith('test-') && window.TestData) {
+            if (selectedValue === 'current') {
+                if (window.DataProcessor && typeof window.DataProcessor.getCurrentData === 'function') {
+                    currentData = window.DataProcessor.getCurrentData();
+                    console.log('updateAdditionalChart: Segundo intento con DataProcessor:', currentData?.length || 0);
+                }
+            } else if (selectedValue.startsWith('test-')) {
                 const testType = selectedValue.replace('test-', '');
-                const testData = window.TestData.loadTestData(testType);
-                currentData = testData.data;
-                console.log('updateAdditionalChart: Datos de prueba cargados:', currentData?.length || 0);
+                if (window.TestData && typeof window.TestData.loadTestData === 'function') {
+                    const testData = window.TestData.loadTestData(testType);
+                    currentData = testData.data;
+                    console.log('updateAdditionalChart: Datos de prueba cargados:', testType, '→', currentData?.length || 0);
+                }
             }
         }
     }
     
-    console.log('updateAdditionalChart: Datos finales disponibles:', currentData?.length || 0, 'registros');
-    
-    if (!currentData || currentData.length === 0) {
-        console.warn('updateAdditionalChart: No hay datos disponibles para el gráfico adicional');
+    if (!currentData || !Array.isArray(currentData) || currentData.length === 0) {
+        console.error('updateAdditionalChart: No se pudieron obtener datos válidos');
+        console.log('updateAdditionalChart: currentData =', currentData);
         
-        // Mostrar mensaje en el gráfico
         const statsElement = document.getElementById('additional-stats');
         if (statsElement) {
             statsElement.textContent = 'No hay datos disponibles para este análisis';
         }
         return;
     }
+
+    if (!window.AdditionalChart) {
+        console.error('updateAdditionalChart: window.AdditionalChart no está disponible');
+        return;
+    }
     
-    // Usar el nuevo sistema de gráficos adicionales
-    if (window.AdditionalChart && window.AdditionalChart.updateChart) {
-        console.log('updateAdditionalChart: Llamando a AdditionalChart.updateChart con:', chartType, currentData.length, 'registros');
-        // ✅ AQUÍ ESTÁ EL FIX PRINCIPAL: pasar los parámetros correctamente
+    if (typeof window.AdditionalChart.updateChart !== 'function') {
+        console.error('updateAdditionalChart: AdditionalChart.updateChart no es una función');
+        return;
+    }
+
+    console.log('updateAdditionalChart: Llamando a AdditionalChart.updateChart');
+    console.log('updateAdditionalChart: Parámetros:', {
+        chartType: chartType,
+        dataLength: currentData.length,
+        firstRow: currentData[0]
+    });
+    
+    try {
         window.AdditionalChart.updateChart(chartType, currentData);
-    } else {
-        console.error('updateAdditionalChart: AdditionalChart no está disponible o no tiene updateChart');
-        console.log('updateAdditionalChart: window.AdditionalChart =', window.AdditionalChart);
+        console.log('updateAdditionalChart: Función ejecutada exitosamente');
+    } catch (error) {
+        console.error('updateAdditionalChart: Error al ejecutar AdditionalChart.updateChart:', error);
     }
 }
 
@@ -1073,9 +1271,20 @@ function handleStatisticsDataSourceChange() {
         
         // Actualizar gráfico adicional
         setTimeout(() => {
-            updateAdditionalChart();
+            console.log('handleStatisticsDataSourceChange: Actualizando gráfico adicional...');
+            
+            const chartTypeElement = document.getElementById('additional-chart-type');
+            if (chartTypeElement && window.AdditionalChart && data && data.length > 0) {
+                const chartType = chartTypeElement.value;
+                console.log('handleStatisticsDataSourceChange: Llamando directamente a AdditionalChart con:', chartType, data.length, 'registros');
+                window.AdditionalChart.updateChart(chartType, data);
+            } else {
+                console.log('handleStatisticsDataSourceChange: Intentando updateAdditionalChart()...');
+                updateAdditionalChart();
+            }
+            
             console.log('Gráfico adicional actualizado por cambio de fuente de datos');
-        }, 150);
+        }, 200);
     } else {
         console.log('No hay datos disponibles para la fuente seleccionada');
         showNoStatisticsData();
@@ -1083,8 +1292,6 @@ function handleStatisticsDataSourceChange() {
 }
 
 function updateStatisticsDisplay(data, meta) {
-    // Esta función actualiza las tarjetas de resumen y detalles
-    // (código similar al que ya tienes arriba)
     console.log('Actualizando display de estadísticas...');
     
     // Total de registros
